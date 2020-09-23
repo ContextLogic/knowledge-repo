@@ -43,8 +43,8 @@ def set_up_indexing_timers(app):
                     update_index(check_timeouts=False)
                 time.sleep(app.config['INDEXING_INTERVAL'])
 
-        app.index_watchdog = multiprocessing.Process(target=index_watchdog, args=(app,))
-        app.index_watchdog.start()
+        #app.index_watchdog = multiprocessing.Process(target=index_watchdog, args=(app,))
+        #app.index_watchdog.start()
     else:
         @app.before_request
         def update_index_if_required():
