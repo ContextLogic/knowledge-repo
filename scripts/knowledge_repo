@@ -346,8 +346,9 @@ elif args.action == 'db_migrate':
     app.db_migrate(args.message, autogenerate=args.autogenerate)
 
 elif args.action == 'reindex':
+    print("REINDEX RUN")
     from knowledge_repo.app.index import update_index
     app = repo.get_app(db_uri=args.dburi, debug=args.debug, config=args.config)
-    app.db_update_index(check_timeouts=False, force=True, reindex=True)
+    #app.db_update_index(check_timeouts=False, force=True, reindex=True)
     with app.app_context():
         update_index(check_timeouts=False)
