@@ -126,27 +126,30 @@ def index_up_to_date():
 
 @ErrorLog.logged
 def update_index(check_timeouts=True, force=False, reindex=False):
-
+    print("129")
     if not current_app.config['INDEXING_ENABLED']:
         return False
-
+    print("132")
     if check_timeouts and not index_due_for_update():
         return False
-
+    print("135")
     is_index_master = acquire_index_lock()
-
+    print("137")
     # Check for update to repositories if configured to do so
     if (
         current_app.config['INDEXING_UPDATES_REPOSITORIES'] and
         (is_index_master or current_app.config['INDEXING_UPDATES_REPOSITORIES_WITHOUT_LOCK'])
     ):
         current_repo.update()
-
+        print("144")
+    print("145")
     # Short-circuit if necessary
     if not force and (not is_index_master or index_up_to_date()):
+        print("148")
         return False
 
     try:
+        print("152")
         IndexMetadata.set('lock', 'index', LOCKED)
         db_session.commit()
 
@@ -155,47 +158,53 @@ def update_index(check_timeouts=True, force=False, reindex=False):
         posts = db_session.query(Post).all()
 
         for post in posts:
-
+            print(str(post))
+            print("162")
             # If UUID has changed, check if we can find it elsewhere in the repository, and if so update index path
             if post.uuid and ((post.path not in kr_dir) or (post.uuid != kr_dir[post.path].uuid)):
                 if post.uuid in kr_uuids:
                     logger.info('Updating location of post: {} -> {}'.format(post.path, kr_uuids[post.uuid].path))
                     post.path = kr_uuids[post.uuid].path
-
+            print("168")
             # If path of post no longer in directory, mark as unpublished
             if post.path not in kr_dir:
                 logger.info('Recording unpublished status for post at {}'.format(post.path))
                 post.status = current_repo.PostStatus.UNPUBLISHED
                 continue
-
+            print("174")
             # Update database according to current state of existing knowledge post and
             # remove from kp_dir. This means that when this loop finishes, kr_dir will
             # only contain posts which are new to the repo.
             kp = kr_dir.pop(post.path)
-
             # Update metadata of post if required
             if reindex or (kp.revision > post.revision or not post.is_published or kp.uuid != post.uuid):
                 if kp.is_valid():
+                    print("182")
                     logger.info('Recording update to post at: {}'.format(kp.path))
                     post.update_metadata_from_kp(kp)
                 else:
+                    print("186")
                     logger.warning('Update to post at "{}" is corrupt.'.format(kp.path))
-
+            print("188")
         # Add the new posts that remain in kr_dir
         for kp_path, kp in kr_dir.items():
             if not kp.is_valid():
+                print("192")
                 logger.warning('New post at "{}" is corrupt.'.format(kp.path))
                 continue
+            print("195")
             logger.info('creating new post from path {}'.format(kp_path))
             post = Post()
             db_session.add(post)
             db_session.flush()  # (matthew) Fix groups logic so this is not necessary
             post.update_metadata_from_kp(kp)
             send_subscription_emails(post)
-
+            print("202")
         # Record revision
         for uri, revision in current_repo.revisions.items():
+            print("205")
             IndexMetadata.set('repository_revision', uri, str(revision))
     finally:
+        print("208")
         IndexMetadata.set('lock', 'index', UNLOCKED)
         db_session.commit()
